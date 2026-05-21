@@ -1,0 +1,46 @@
+name: build-and-publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ansible/**
+      - goss/**
+      - packer/**
+      - scripts/**
+      - .github/workflows/build.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-packer@v3
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip ansible
+          ansible-galaxy collection install -r ansible/requirements.yml -p .ansible/collections --force
+
+      - name: Build AMI
+        id: build
+        run: |
+          packer init packer
+          packer build -machine-readable -var "git_sha=${GITHUB_SHA}" packer | tee packer.log
+          ami_id="$(awk -F, '/artifact,0,id/ { split($6, parts, ":"); print parts[2] }' packer.log | tail -1)"
+          test -n "$ami_id"
+          echo "ami_id=$ami_id" >> "$GITHUB_OUTPUT"
+
+      - name: Publish AMI
+        run: ./scripts/publish-ami.sh "${{ steps.build.outputs.ami_id }}"

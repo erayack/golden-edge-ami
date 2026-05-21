@@ -1,0 +1,26 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-packer@v3
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          python -m pip install --upgrade pip ansible-lint
+          ansible-galaxy collection install -r ansible/requirements.yml -p .ansible/collections --force
+
+      - name: Validate
+        run: make validate

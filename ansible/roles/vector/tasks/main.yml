@@ -1,0 +1,38 @@
+---
+- name: Add Vector apt repository
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://setup.vector.dev | bash
+  args:
+    executable: /bin/bash
+    creates: /etc/apt/sources.list.d/vector.list
+
+- name: Install pinned Vector
+  ansible.builtin.apt:
+    name: "vector={{ vector_version }}-*"
+    state: present
+    allow_downgrade: true
+
+- name: Create local Vector log directory
+  ansible.builtin.file:
+    path: /var/log/golden-edge
+    state: directory
+    owner: vector
+    group: vector
+    mode: "0755"
+
+- name: Install Vector config
+  ansible.builtin.template:
+    src: vector.yaml.j2
+    dest: /etc/vector/vector.yaml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart vector
+
+- name: Enable Vector
+  ansible.builtin.systemd:
+    name: vector
+    enabled: true
+    state: started
+    daemon_reload: true

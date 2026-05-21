@@ -1,0 +1,77 @@
+---
+- name: Install Envoy archive dependencies
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - lsb-release
+    state: present
+    update_cache: true
+
+- name: Install Envoy GPG key
+  ansible.builtin.get_url:
+    url: https://apt.envoyproxy.io/signing.key
+    dest: /usr/share/keyrings/envoyproxy-keyring.asc
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add Envoy apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ deb_architecture }} signed-by=/usr/share/keyrings/envoyproxy-keyring.asc] https://apt.envoyproxy.io jammy main"
+    filename: envoyproxy
+    state: present
+    update_cache: true
+
+- name: Install pinned Envoy
+  ansible.builtin.apt:
+    name: "envoy={{ envoy_version }}*"
+    state: present
+    allow_downgrade: true
+
+- name: Create Envoy config directory
+  ansible.builtin.file:
+    path: /etc/envoy
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Envoy config
+  ansible.builtin.template:
+    src: envoy.yaml.j2
+    dest: /etc/envoy/envoy.yaml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart envoy
+
+- name: Install Envoy systemd override
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/envoy.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Envoy Proxy
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=envoy
+      Group=envoy
+      ExecStart=/usr/bin/envoy -c /etc/envoy/envoy.yaml --service-cluster golden-edge --service-node %H
+      Restart=always
+      RestartSec=5
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart envoy
+
+- name: Enable Envoy
+  ansible.builtin.systemd:
+    name: envoy
+    enabled: true
+    state: started
+    daemon_reload: true

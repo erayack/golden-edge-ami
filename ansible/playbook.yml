@@ -1,0 +1,17 @@
+---
+# Required extra-vars (set by Packer only): envoy_version, node_exporter_version,
+# vector_version, ami_architecture. Do not add playbook defaults — keep Packer as
+# the single source of truth for pinned versions and architecture.
+- name: Build golden edge AMI
+  hosts: all
+  become: true
+  vars:
+    deb_architecture: "{{ 'arm64' if ami_architecture == 'arm64' else 'amd64' }}"
+    release_architecture: "{{ 'arm64' if ami_architecture == 'arm64' else 'amd64' }}"
+    node_exporter_base_url: "https://github.com/prometheus/node_exporter/releases/download"
+    node_exporter_archive: "node_exporter-{{ node_exporter_version }}.linux-{{ release_architecture }}.tar.gz"
+  roles:
+    - hardening
+    - envoy
+    - node_exporter
+    - vector

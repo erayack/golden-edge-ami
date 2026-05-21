@@ -1,0 +1,16 @@
+sources:
+  journald:
+    type: journald
+    include_units:
+      - envoy.service
+      - node_exporter.service
+      - vector.service
+
+sinks:
+  local_file:
+    type: file
+    inputs:
+      - journald
+    path: /var/log/golden-edge/vector-events.log
+    encoding:
+      codec: json

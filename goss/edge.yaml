@@ -1,0 +1,39 @@
+service:
+  envoy:
+    enabled: true
+    running: true
+  node_exporter:
+    enabled: true
+    running: true
+  vector:
+    enabled: true
+    running: true
+
+port:
+  tcp:10000:
+    listening: true
+    ip:
+      - 0.0.0.0
+  tcp:9100:
+    listening: true
+    ip:
+      - 0.0.0.0
+  tcp:9901:
+    listening: true
+    ip:
+      - 127.0.0.1
+
+command:
+  envoy_version:
+    exec: envoy --version
+    exit-status: 0
+    stdout:
+      - envoy
+  node_exporter_version:
+    exec: /usr/local/bin/node_exporter --version
+    exit-status: 0
+    stdout:
+      - node_exporter
+  vector_validate:
+    exec: vector validate /etc/vector/vector.yaml
+    exit-status: 0

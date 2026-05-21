@@ -1,0 +1,15 @@
+.DS_Store
+.ansible/
+
+# Terraform local state and provider cache.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Local deployment inputs.
+terraform/envs/*/terraform.tfvars
+
+# Packer runtime output.
+packer.log
+manifest.json

@@ -1,0 +1,6 @@
+vpc_id     = "vpc-xxxxxxxx"
+subnet_ids = ["subnet-xxxxxxxx", "subnet-yyyyyyyy"]
+
+# Restrict these for a real deployment.
+allowed_http_cidrs = ["0.0.0.0/0"]
+ssh_cidrs          = []
